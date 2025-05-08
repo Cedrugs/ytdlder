@@ -1,103 +1,194 @@
+"use client"
+import React, { useState } from "react"
+import { urlSchema } from "./types/validation";
+import { VideoInfo } from "./types/videos";
+import Dropdown from "./components/Dropdown";
+import { motion, AnimatePresence } from 'framer-motion';
 import Image from "next/image";
 
-export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+export default function Landing() {
+    const [error, setError] = useState<string>('');
+    const [isLoading, setIsLoading] = useState(false);
+    const [isDownloading, setIsDownloading] = useState(false);
+    const [videoData, setVideoData] = useState<VideoInfo | null>(null);
+    const [selectedFormat, setSelectedFormat] = useState({
+        "videoId": "",
+        "itag": 0
+    })
+    const [formData, setFormData] = useState({
+        url: "",
+    });
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
-  );
+    const resetSubmit = () => {
+        setVideoData(null);
+        setSelectedFormat({
+            "videoId": "",
+            "itag": 0
+        });
+        setError("");
+        setIsLoading(false);
+        setIsDownloading(false);
+    }
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setFormData({
+            ...formData,
+            [e.target.name]: e.target.value,
+        })
+    }
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+
+        const validation = urlSchema.safeParse(formData);
+
+        if (!validation.success) {
+            validation.error.issues.forEach(issue => {
+                if (issue.path.includes("url")) {
+                    setError("URL is required!");
+                    return;
+                }
+            })
+            return;
+        }
+
+        resetSubmit();
+
+        setIsLoading(true);
+
+        try {
+            const res = await fetch("/api/video-info", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ url: formData.url }),
+            });
+    
+            const data = await res.json();
+            setVideoData(data);
+        } catch (err) {
+            console.error("💥 Fetch error:", err);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleDownload = async () => {
+        setIsLoading(true);
+        setIsDownloading(true);
+        setError("");
+    
+        try {
+            const res = await fetch(`/api/download?videoId=${selectedFormat.videoId}&itag=${selectedFormat.itag}`);
+
+            const data = await res.json();
+            const a = document.createElement("a");
+
+            console.log(data);
+
+            a.href = data.url;
+            a.download = data.filename;
+
+            console.log(a);
+            a.click();
+        } catch (err) {
+            console.error(err);
+            setError("Failed to download video");
+        } finally {
+            setIsDownloading(false);
+            setIsLoading(false);
+        }
+    };    
+
+    return (
+        <>
+            <section id="Download" className="flex items-center justify-center content-center h-[100vh] gap-8">
+                <motion.div
+                    animate={{
+                        x: videoData ? -50 : 0,
+                    }}
+                    transition={{ type: "spring", stiffness: 100, damping: 20 }}
+                    className="flex flex-col justify-center items-center bg-black p-20 rounded-2xl space-y-6 border-red-500 border-2 gap-2"
+                >
+                    <div className="flex flex-col gap-4 justify-center items-center">
+                        <h1 className="text-7xl font-bold text-center text-red-500">ytdlder</h1>
+                        <p className="text-red-500">Made with &lt;3 by cedric</p>
+                    </div>
+                    <form className="flex flex-col w-full gap-6" onSubmit={handleSubmit}>
+                        <input
+                            type="text"
+                            name="url"
+                            placeholder="Paste YouTube URL here..."
+                            value={formData.url}
+                            onChange={handleChange}
+                            className="w-full px-4 py-3 bg-zinc-800 text-white rounded-xl focus:outline-none 
+                                        focus:ring-2 focus:ring-red-500 placeholder-white"
+                        />
+                        <p className={error ? "text-red-500" : "hidden"}>{error}</p>
+                        <button
+                            className="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-3 rounded-xl 
+                                        transition duration-300 disabled:cursor-no-drop disabled:bg-zinc-800"
+                            disabled={isLoading}
+                        >
+                            Search
+                        </button>
+                    </form>
+                </motion.div>
+
+                {videoData && (
+                    <AnimatePresence>
+                        <motion.div
+                            key="videoDataBox"
+                            initial={{ x: -100, opacity: 0 }}
+                            animate={{ x: 0, opacity: 1 }}
+                            exit={{ x: -100, opacity: 0 }}
+                            transition={{ type: "spring", stiffness: 80, damping: 15 }}
+                            className="flex flex-col w-96 gap-4"
+                        >
+                            <Image 
+                                src={videoData?.videoDetails?.thumbnail ?? ""}
+                                alt={videoData?.videoDetails?.title} 
+                                className="w-96 rounded-xl border-2 border-red-500" 
+                                width={384}
+                                height={216}
+                            />
+                            <p className="text-red-500 text-wrap">{videoData?.videoDetails?.title}</p>
+                            <div className="flex flex-row w-full gap-4 items-center justify-center">
+                                <div className="flex-grow">
+                                    <Dropdown
+                                        defaultValue={"Select video quality"}
+                                        options={videoData?.formats?.map((format) => ({
+                                            label: `${format.quality} - ${((format.size ?? 0) / (1024 * 1024) + 10).toFixed(2)} MB`,
+                                            value: format.itag,
+                                        })) ?? []}
+                                        onChange={(itag) => {
+                                            setSelectedFormat({
+                                                videoId: videoData.videoDetails.videoId,
+                                                itag: itag,
+                                            });
+                                        }}
+                                    />
+                                </div>
+                                <button
+                                    className={
+                                        `text-white rounded-2xl w-16 h-14 flex justify-center items-center bg-red-500 hover:bg-red-600 
+                                        disabled:bg-zinc-800 transition duration-300`
+                                    }
+                                    disabled={isDownloading}
+                                    onClick={handleDownload}
+                                >
+                                    {isDownloading ? (
+                                        <div className="w-6 h-6 border-4 border-white border-t-transparent rounded-full animate-spin" />
+                                    ) : (
+                                        <span className="material-symbols-outlined">download</span>
+                                    )}
+                                </button>
+                            </div>
+                        </motion.div>
+                    </AnimatePresence>
+                )}
+            </section>
+        </>
+    )
 }
