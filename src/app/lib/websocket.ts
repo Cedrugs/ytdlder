@@ -41,8 +41,8 @@ function initializeWebSocketServer(): WebSocketServer {
         delete clients[downloadId]; // Clean up on error
       });
     } else {
-      console.log("[WebSocket] Client connected without a downloadId. Closing connection.");
-      ws.close();
+        console.log("[WebSocket] Client connected without a downloadId. Closing connection.");
+        ws.close();
     }
   });
 

@@ -24,9 +24,9 @@ export default function Landing() {
 
     const setupWebSocket = (downloadId: string) => {
         const socket = new WebSocket(
-            process.env.NODE_ENV === "development"
+            process.env.ENVIRONMENT == "development"
               ? `ws://localhost:3001?downloadId=${downloadId}`
-              : `wss://${process.env.SITE_URL}/ws?downloadId=${downloadId}`
+              : `wss://${new URL(process.env.SITE_URL ?? "").host}/ws?downloadId=${downloadId}`
         );
         wsRef.current = socket;
 
@@ -96,7 +96,12 @@ export default function Landing() {
             });
     
             const data = await res.json();
-            setVideoData(data);
+
+            if (data["error"]){
+                setError("Invalid URL!");
+            } else {
+                setVideoData(data);
+            }
         } catch (err) {
             console.error("💥 Fetch error:", err);
         } finally {
