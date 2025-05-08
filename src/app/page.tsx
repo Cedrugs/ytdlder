@@ -1,5 +1,5 @@
 "use client"
-import React, { useState } from "react"
+import React, { useState, useRef } from "react"
 import { urlSchema } from "./types/validation";
 import { VideoInfo } from "./types/videos";
 import Dropdown from "./components/Dropdown";
@@ -11,6 +11,7 @@ export default function Landing() {
     const [isLoading, setIsLoading] = useState(false);
     const [isDownloading, setIsDownloading] = useState(false);
     const [videoData, setVideoData] = useState<VideoInfo | null>(null);
+    const [downloadProgress, setDownloadProgress] = useState<string>('');
     const [selectedFormat, setSelectedFormat] = useState({
         "videoId": "",
         "itag": 0
@@ -18,6 +19,35 @@ export default function Landing() {
     const [formData, setFormData] = useState({
         url: "",
     });
+
+    const wsRef = useRef<WebSocket | null>(null);
+
+    const setupWebSocket = (downloadId: string) => {
+        const socket = new WebSocket(
+            process.env.NODE_ENV === "development"
+              ? `ws://localhost:3001?downloadId=${downloadId}`
+              : `wss://${process.env.SITE_URL}/ws?downloadId=${downloadId}`
+        );
+        wsRef.current = socket;
+
+        socket.onopen = () => {
+            console.log("WebSocket connected");
+        };
+
+        socket.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+
+            setDownloadProgress(data.message);
+        };
+
+        socket.onerror = (err) => {
+            console.error("WebSocket error:", err);
+        };
+
+        socket.onclose = () => {
+            console.log("WebSocket closed");
+        };
+    };
 
     const resetSubmit = () => {
         setVideoData(null);
@@ -78,19 +108,20 @@ export default function Landing() {
         setIsLoading(true);
         setIsDownloading(true);
         setError("");
+
+        const downloadId = Math.random().toString(36).substring(2, 10);
+        setupWebSocket(downloadId);
+        setDownloadProgress("Starting download");
     
         try {
-            const res = await fetch(`/api/download?videoId=${selectedFormat.videoId}&itag=${selectedFormat.itag}`);
+            const res = await fetch(`/api/download?videoId=${selectedFormat.videoId}&itag=${selectedFormat.itag}&downloadId=${downloadId}`);
 
             const data = await res.json();
             const a = document.createElement("a");
 
-            console.log(data);
-
             a.href = data.url;
             a.download = data.filename;
 
-            console.log(a);
             a.click();
         } catch (err) {
             console.error(err);
@@ -98,6 +129,9 @@ export default function Landing() {
         } finally {
             setIsDownloading(false);
             setIsLoading(false);
+
+            setDownloadProgress("");
+            wsRef.current?.close();
         }
     };    
 
@@ -152,6 +186,7 @@ export default function Landing() {
                                 className="w-96 rounded-xl border-2 border-red-500" 
                                 width={384}
                                 height={216}
+                                unoptimized
                             />
                             <p className="text-red-500 text-wrap">{videoData?.videoDetails?.title}</p>
                             <div className="flex flex-row w-full gap-4 items-center justify-center">
@@ -185,6 +220,18 @@ export default function Landing() {
                                     )}
                                 </button>
                             </div>
+                            {isDownloading && (
+                                <motion.div
+                                key="videoDataBox"
+                                initial={{ y: -100, opacity: 0 }}
+                                animate={{ y: 0, opacity: 1 }}
+                                exit={{ y: -100, opacity: 0 }}
+                                transition={{ type: "spring", stiffness: 80, damping: 15 }}
+                                className="flex flex-col w-96 gap-4"
+                                >
+                                    <p className="text-white bg-zinc-800 p-4 rounded-xl">[Log]: {downloadProgress}</p>
+                                </motion.div>
+                            )}
                         </motion.div>
                     </AnimatePresence>
                 )}

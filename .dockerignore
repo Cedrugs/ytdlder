@@ -1,6 +1,5 @@
 # Ignore all node_modules except the one you're tweaking
 node_modules/*
-!node_modules/@distube/ytdl-core/**
 
 # Common junk
 .pnpm
