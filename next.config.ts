@@ -11,10 +11,6 @@ const nextConfig: NextConfig = {
       }
     ]
   },
-  env: {
-    SITE_URL: process.env.SITE_URL,
-    ENVIRONMENT: process.env.ENVIRONMENT,
-  }
 };
 
 export default nextConfig;

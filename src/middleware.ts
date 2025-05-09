@@ -5,7 +5,8 @@ export const config = {
 }
 
 export function middleware(request: NextRequest) {
-    const serverOrigin = process.env.SITE_URL || "";
+    const serverOrigin = process.env.NEXT_PUBLIC_SITE_URL || "";
+    console.log(serverOrigin);
 
     const referer = request.headers.get("referer") ?? "";
 

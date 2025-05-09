@@ -23,10 +23,11 @@ export default function Landing() {
     const wsRef = useRef<WebSocket | null>(null);
 
     const setupWebSocket = (downloadId: string) => {
+        console.log("NODE Site URL:", process.env.NEXT_PUBLIC_SITE_URL);
         const socket = new WebSocket(
-            process.env.ENVIRONMENT == "development"
+            process.env.NODE_ENV === "development"
               ? `ws://localhost:3001?downloadId=${downloadId}`
-              : `wss://${new URL(process.env.SITE_URL ?? "").host}/ws?downloadId=${downloadId}`
+              : `wss://${new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "").host}/ws?downloadId=${downloadId}`
         );
         wsRef.current = socket;
 

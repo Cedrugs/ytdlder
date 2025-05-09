@@ -68,7 +68,7 @@ export async function GET(request: NextRequest) {
         const clientFilename = `${videoTitle}_${videoFormat.qualityLabel || itag}.${fileExtension}`;
         mergedPath = path.join(tempDir, `${clientFilename}`);
 
-        const baseURL = new URL(process.env.SITE_URL || request.nextUrl.origin);
+        const baseURL = new URL(process.env.NEXT_PUBLIC_SITE_URL || request.nextUrl.origin);
         const publicUrl = `${baseURL.origin}/downloads/${clientFilename}`;
 
         console.log(`[${downloadId}] [${videoId}] Format chosen: ${videoFormat.qualityLabel} (${videoFormat.mimeType}).`);
