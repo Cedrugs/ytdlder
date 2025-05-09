@@ -68,8 +68,8 @@ export async function GET(request: NextRequest) {
         const clientFilename = `${videoTitle}_${videoFormat.qualityLabel || itag}.${fileExtension}`;
         mergedPath = path.join(tempDir, `${clientFilename}`);
 
-        const baseURL = new URL(process.env.NEXT_PUBLIC_SITE_URL || request.nextUrl.origin);
-        const publicUrl = `${baseURL.origin}/downloads/${clientFilename}`;
+        const baseURL = new URL(process.env.SITE_URL || request.nextUrl.origin);
+        const publicUrl = `${baseURL.origin}/api/files/${clientFilename}`;
 
         console.log(`[${downloadId}] [${videoId}] Format chosen: ${videoFormat.qualityLabel} (${videoFormat.mimeType}).`);
         
@@ -128,13 +128,11 @@ export async function GET(request: NextRequest) {
         }
 
 
-        console.log(`[${downloadId}] [${videoId}] Done.`);
+        console.log(`[${downloadId}] [${videoId}] Done. Available at: ${publicUrl}`);
 
         // Clean up temporary files
         // if (fs.existsSync(tempVideoPath) && tempVideoPath !== mergedPath) fs.unlinkSync(tempVideoPath);
         // if (fs.existsSync(tempAudioPath)) fs.unlinkSync(tempAudioPath);
-        
-        sendProgress(downloadId, "Download complete! Your file is ready.", { url: publicUrl, filename: clientFilename, final: true });
         return new Response(JSON.stringify({ url: publicUrl, filename: clientFilename }), { status: 200 });
 
     } catch (err: unknown) { // Catch specific errors if possible
