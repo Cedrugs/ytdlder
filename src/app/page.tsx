@@ -60,6 +60,7 @@ export default function Landing() {
         setError("");
         setIsLoading(false);
         setIsDownloading(false);
+        setDownloadProgress("");
     }
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {

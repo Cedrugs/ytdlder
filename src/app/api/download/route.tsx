@@ -5,6 +5,8 @@ import path from "path";
 import ytdl from "@distube/ytdl-core";
 import { sendProgress, ensureWebSocketServerRunning } from "@/app/lib/websocket";
 
+
+// Test directory for the first time
 const tempDir = path.join('./public', 'downloads');
 if (!fs.existsSync(tempDir)) {
     try {
@@ -16,7 +18,9 @@ if (!fs.existsSync(tempDir)) {
     }
 }
 
+// GET /api/download
 export async function GET(request: NextRequest) {
+    // Check and try to connect to WebSocket for progress update
     try {
         ensureWebSocketServerRunning();
     } catch (err: unknown) {
@@ -25,15 +29,18 @@ export async function GET(request: NextRequest) {
          return new Response(JSON.stringify({ error: "WebSocket service not available." }), { status: 503 });
     }
 
+    // Get necessary things
     const searchParams = request.nextUrl.searchParams;
     const videoId = searchParams.get("videoId");
     const itag = searchParams.get("itag");
     const downloadId = searchParams.get("downloadId") ?? crypto.randomUUID();
 
+    // Path initialization
     let tempVideoPath = '';
     let tempAudioPath = '';
     let mergedPath = '';
 
+    // TODO: Add validation for downloadId
     if (!videoId || !itag || typeof videoId !== 'string' || typeof itag !== 'string') {
         return new Response(JSON.stringify({ error: "Video ID and format tag (itag) are required" }), { status: 400 });
     }
@@ -45,16 +52,18 @@ export async function GET(request: NextRequest) {
         const videoFormat = ytdl.chooseFormat(info.formats, { quality: itag });
         const audioFormat = ytdl.chooseFormat(info.formats, { quality: 'highestaudio', filter: 'audioonly' });
 
+        // TODO: Add frontend handler for return error.
         if (!videoFormat) {
-            sendProgress(downloadId, "Error: Requested video format not found", { error: true });
             return new Response(JSON.stringify({ error: "Requested video format (itag) not found" }), { status: 404 });
         }
 
+        // TODO: Fix this whether to skip audio or return error
         if (!audioFormat && videoFormat.hasAudio === false) {
             sendProgress(downloadId, "Error: Requested video doesn't have a separate audio stream and video stream has no audio.", { error: true });
-            return new Response(JSON.stringify({ error: "Requested video format doesn't have audio, and no separate audio stream found" }), { status: 404 });
+            return new Response(JSON.stringify({ error: "Requested video format doesn't have audio" }), { status: 404 });
         }
         
+        // TODO: Fix this to use format that can't be duplicated: Current use video title to serve video to the client (can be duplicated)
         const videoTitle = info.videoDetails.title.replace(/[^a-zA-Z0-9\-_ ]/g, '_').replace(/ /g, '_');
         const fileExtension = videoFormat.container || 'mp4';
         const uniqueSuffix = `${videoId}_${itag}_${Date.now()}`;
@@ -66,6 +75,7 @@ export async function GET(request: NextRequest) {
 
 
         const clientFilename = `${videoTitle}_${videoFormat.qualityLabel || itag}.${fileExtension}`;
+        // TODO: Fix this to use format that can't be duplicated: Current use video title to serve video to the client (can be duplicated)
         mergedPath = path.join(tempDir, `${clientFilename}`);
 
         const baseURL = new URL(process.env.SITE_URL || request.nextUrl.origin);
@@ -127,9 +137,9 @@ export async function GET(request: NextRequest) {
             throw new Error("No audio available for the video.");
         }
 
-
         console.log(`[${downloadId}] [${videoId}] Done. Available at: ${publicUrl}`);
 
+        // TODO: Implement cleanup feature and S3 caching
         // Clean up temporary files
         // if (fs.existsSync(tempVideoPath) && tempVideoPath !== mergedPath) fs.unlinkSync(tempVideoPath);
         // if (fs.existsSync(tempAudioPath)) fs.unlinkSync(tempAudioPath);
@@ -145,6 +155,7 @@ export async function GET(request: NextRequest) {
         // if (tempVideoPath && fs.existsSync(tempVideoPath)) fs.unlinkSync(tempVideoPath);
         // if (tempAudioPath && fs.existsSync(tempAudioPath)) fs.unlinkSync(tempAudioPath);
 
+        // TODO: QC on All Error
         let message = 'An unknown error occurred during download.';
         let status = 500;
     

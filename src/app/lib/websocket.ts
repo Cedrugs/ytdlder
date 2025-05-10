@@ -38,7 +38,7 @@ server.on("connection", (ws: WebSocket, req: IncomingMessage) => {
 
         ws.on("error", (error) => {
             console.error(`[WebSocket] Error for client ${downloadId}:`, error);
-            delete clients[downloadId]; // Clean up on error
+            delete clients[downloadId];
         });
     } else {
         console.log("[WebSocket] Client connected without a downloadId. Closing connection.");
