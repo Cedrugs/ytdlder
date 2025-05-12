@@ -1,6 +1,5 @@
 # ytdlder 
 
-## Overview  
 **ytdlder** is a lightweight, open-source YouTube video downloader designed to simplify downloading videos in high quality without ads or unnecessary bloat. Built with modern web technologies, it ensures fast, reliable downloads with support for multiple formats and resolutions.  
 
 ## Key Features  
