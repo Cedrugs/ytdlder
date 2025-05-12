@@ -40,8 +40,7 @@ export async function GET(request: NextRequest) {
     let tempAudioPath = '';
     let mergedPath = '';
 
-    // TODO: Add validation for downloadId
-    if (!videoId || !itag || typeof videoId !== 'string' || typeof itag !== 'string') {
+    if (!videoId || !itag || !downloadId || typeof videoId !== 'string' || typeof itag !== 'string' || typeof downloadId !== 'string') {
         return new Response(JSON.stringify({ error: "Video ID and format tag (itag) are required" }), { status: 400 });
     }
 
@@ -59,7 +58,6 @@ export async function GET(request: NextRequest) {
 
         // TODO: Fix this whether to skip audio or return error
         if (!audioFormat && videoFormat.hasAudio === false) {
-            sendProgress(downloadId, "Error: Requested video doesn't have a separate audio stream and video stream has no audio.", { error: true });
             return new Response(JSON.stringify({ error: "Requested video format doesn't have audio" }), { status: 404 });
         }
         
@@ -72,7 +70,6 @@ export async function GET(request: NextRequest) {
 
         const audioFileExtension = audioFormat?.container || 'm4a';
         tempAudioPath = path.join(tempDir, `${uniqueSuffix}_audio.${audioFileExtension}`);
-
 
         const clientFilename = `${videoTitle}_${videoFormat.qualityLabel || itag}.${fileExtension}`;
         // TODO: Fix this to use format that can't be duplicated: Current use video title to serve video to the client (can be duplicated)
