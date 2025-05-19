@@ -3,9 +3,9 @@ import { createReadStream, existsSync } from "fs";
 import { join } from "path";
 import { stat } from "fs/promises";
 
-export async function GET(req: NextRequest, { params }: { params: Promise<{ filename: string }>}) {
-    const { filename } = await params
-    const filePath = join(process.cwd(), "public", "downloads", filename);
+export async function GET(req: NextRequest, { params }: { params: Promise<{ videoId: string, filename: string }>}) {
+    const { videoId, filename } = await params
+    const filePath = join(process.cwd(), "public", "downloads", videoId, filename);
 
     if (!existsSync(filePath)) {
         return new Response(JSON.stringify({ error: "File not found" }), { status: 404 });
