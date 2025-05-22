@@ -99,8 +99,8 @@ export default function Landing() {
     
             const data = await res.json();
 
-            if (data["error"]){
-                setError("Invalid URL!");
+            if (data.error){
+                setError(data.error);
             } else {
                 setVideoData(data);
             }
@@ -201,7 +201,7 @@ export default function Landing() {
                                     <Dropdown
                                         defaultValue={"Select video quality"}
                                         options={videoData?.formats?.map((format) => ({
-                                            label: `${format.quality} - ${((format.size ?? 0) / (1024 * 1024) + 10).toFixed(2)} MB`,
+                                            label: `${format.quality ?? ""} ${format.quality !== null ? "mp4" : "mp3"} - ${((format.size ?? 0) / (1024 * 1024) + (format.quality !== null ? 10 : 0)).toFixed(2)} MB`,
                                             value: format.itag,
                                         })) ?? []}
                                         onChange={(itag) => {
@@ -210,7 +210,7 @@ export default function Landing() {
                                                 itag: itag,
                                             });
                                         }}
-                                    />
+                                        />
                                 </div>
                                 <button
                                     className={

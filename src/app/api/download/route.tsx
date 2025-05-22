@@ -56,17 +56,11 @@ export async function GET(request: NextRequest) {
         const videoFormat = ytdl.chooseFormat(info.formats, { quality: itag });
         const audioFormat = ytdl.chooseFormat(info.formats, { quality: 'highestaudio', filter: 'audioonly' });
 
-        // TODO: Add frontend handler for return error.
-        if (!videoFormat) {
-            return new Response(JSON.stringify({ error: "Requested video format (itag) not found" }), { status: 404 });
-        }
-
         // TODO: Fix this whether to skip audio or return error
         if (!audioFormat && videoFormat.hasAudio === false) {
             return new Response(JSON.stringify({ error: "Requested video format doesn't have audio" }), { status: 404 });
         }
-        
-        // TODO: Fix this to use format that can't be duplicated: Current use video title to serve video to the client (can be duplicated)
+
         const videoTitle = info.videoDetails.title.replace(/[^a-zA-Z0-9\-_ ]/g, '_').replace(/ /g, '_');
         
         const fileExtension = videoFormat.container || 'mp4';
@@ -76,7 +70,12 @@ export async function GET(request: NextRequest) {
         const audioFileExtension = audioFormat?.container || 'm4a';
         tempAudioPath = path.join(tempDir, `${videoId}/${uniqueSuffix}_audio.${audioFileExtension}`);
 
-        const clientFilename = `${videoTitle}_${videoFormat.qualityLabel || itag}.${fileExtension}`;
+        let clientFilename = `${videoTitle}_${videoFormat.qualityLabel || itag}.${fileExtension}`;
+        
+        if (videoFormat.mimeType?.includes("audio")) {
+            clientFilename = `${videoTitle}.mp3`;
+        }
+        
         mergedPath = path.join(tempDir, `${videoId}/${clientFilename}`);
 
         const baseURL = new URL(process.env.SITE_URL || request.nextUrl.origin);
@@ -90,20 +89,25 @@ export async function GET(request: NextRequest) {
             return new Response(JSON.stringify({ url: publicUrl, filename: clientFilename }), { status: 200 });
         }
 
-        // Download the video
-        console.log(`[${downloadId}] [${videoId}] Starting server-side video download`);
-        sendProgress(downloadId, "Downloading video stream");
-        await new Promise<void>((resolve, reject) => {
-            const stream = ytdl(`https://www.youtube.com/watch?v=${videoId}`, { format: videoFormat });
-            const out = fs.createWriteStream(tempVideoPath);
-            stream.pipe(out);
-            stream.on('error', (err) => { console.error(`[${downloadId}] [${videoId}] Video stream error:`, err); reject(err); });
-            out.on('finish', resolve);
-            out.on('error', (err) => { console.error(`[${downloadId}] [${videoId}] Video write stream error:`, err); reject(err); });
-        });
+        // Check if the user is only downloading the audio
+        if (!videoFormat.mimeType?.includes("audio")) {
+            // Download the video
+            console.log(`[${downloadId}] [${videoId}] Starting server-side video download`);
+            sendProgress(downloadId, "Downloading video stream");
+            await new Promise<void>((resolve, reject) => {
+                const stream = ytdl(`https://www.youtube.com/watch?v=${videoId}`, { format: videoFormat });
+                const out = fs.createWriteStream(tempVideoPath);
+                stream.pipe(out);
+                stream.on('error', (err) => { console.error(`[${downloadId}] [${videoId}] Video stream error:`, err); reject(err); });
+                out.on('finish', resolve);
+                out.on('error', (err) => { console.error(`[${downloadId}] [${videoId}] Video write stream error:`, err); reject(err); });
+            });
+        }
+
+        console.log(videoFormat);
 
         // Download the audio
-        if (videoFormat.hasAudio === false && audioFormat) {
+        if ((videoFormat.hasAudio === false && audioFormat) || videoFormat.mimeType?.includes("audio")) {
             console.log(`[${downloadId}] [${videoId}] Starting server-side audio download`);
             sendProgress(downloadId, "Downloading audio stream");
             await new Promise<void>((resolve, reject) => {
@@ -114,7 +118,34 @@ export async function GET(request: NextRequest) {
                 out.on('finish', resolve);
                 out.on('error', (err) => { console.error(`[${downloadId}] [${videoId}] Audio write stream error:`, err); reject(err);});
             });
+        } else if (videoFormat.hasAudio === true) { // Skip if video comes with audio
+             console.log(`[${downloadId}] [${videoId}] Video format includes audio. Skipping separate audio download and merge.`);
+             sendProgress(downloadId, "Video includes audio, skipping merge.");
+             fs.renameSync(tempVideoPath, mergedPath);
+        } else {
+            throw new Error("No audio available for the video.");
+        }
 
+        // Only convert to mp3
+        if (videoFormat.mimeType?.includes("audio")) {
+            await new Promise<void>((resolve, reject) => {
+                ffmpeg()
+                    .input(tempAudioPath)
+                    .audioCodec('libmp3lame')
+                    .toFormat('mp3')
+                    .on('end', () => {
+                        console.log(`[${downloadId}] [${videoId}] MP3 Conversion complete`);
+                        resolve();
+                    })
+                    .on('error', (err) => {
+                        console.error(`[${downloadId}] [${videoId}] ffmpeg error:`, err.message);
+                        reject(err);
+                    })
+                    .save(mergedPath);
+            })
+        }
+
+        if (!videoFormat.mimeType?.includes("audio")) {
             // Merge with ffmpeg
             console.log(`[${downloadId}] [${videoId}] Starting server-side merging with ffmpeg`);
             sendProgress(downloadId, "Merging video and audio");
@@ -134,12 +165,6 @@ export async function GET(request: NextRequest) {
                     })
                     .save(mergedPath);
             });
-        } else if (videoFormat.hasAudio === true) { // Skip if video comes with audio
-             console.log(`[${downloadId}] [${videoId}] Video format includes audio. Skipping separate audio download and merge.`);
-             sendProgress(downloadId, "Video includes audio, skipping merge.");
-             fs.renameSync(tempVideoPath, mergedPath);
-        } else {
-            throw new Error("No audio available for the video.");
         }
 
         // Implemented S3 storage
@@ -152,28 +177,11 @@ export async function GET(request: NextRequest) {
         console.log(`[${downloadId}] [${videoId}] Done. Available at: ${publicUrl}`);
 
         return new Response(JSON.stringify({ url: publicUrl, filename: clientFilename }), { status: 200 });
-    } catch (err: unknown) { // Catch specific errors if possible
+    } catch (err: unknown) {
         const error = err as Error;
 
         console.error(`[${downloadId}] [${videoId}] Download error:`, error);
-        sendProgress(downloadId, `Error: ${error.message || 'An unknown error occurred.'}`, { error: true, final: true });
-
-        // TODO: QC on All Error
-        let message = 'An unknown error occurred during download.';
-        let status = 500;
-    
-        if (error.message) {
-            if (error.message.includes('private') || error.message.includes('unavailable')) {
-                status = 404; message = 'Video not found, is private, or unavailable.';
-            } else if (error.message.includes('confirm your age')) {
-                status = 403; message = 'Age-restricted video. Cannot process.';
-            } else if (error.message.includes('Failed to fetch video stream') || error.message.includes('Status code: 403')) {
-                status = 502; message = 'Server error: Could not fetch video from source (possibly due to restrictions).';
-            } else {
-                message = error.message;
-            }
-        }
-        return new Response(JSON.stringify({ error: message }), { status: status });
+        return new Response(JSON.stringify({ error: "An unknown error occurred during download." }), { status: 500 });
     } finally {
         // Clean up temp files
         if (fs.existsSync(tempVideoPath) && tempVideoPath !== mergedPath) fs.unlinkSync(tempVideoPath);

@@ -47,18 +47,18 @@ server.on("connection", (ws: WebSocket, req: IncomingMessage) => {
 });
 
 server.on("error", (error: NodeJS.ErrnoException) => {
-    if (error.code === 'EADDRINUSE') {
-        console.error(`[WebSocket] Error: Port ${PORT} is already in use. Another server instance might be running.`);
-    } else {
-        console.error("[WebSocket] Server Error:", error);
-    }
+        if (error.code === 'EADDRINUSE') {
+            console.error(`[WebSocket] Error: Port ${PORT} is already in use. Another server instance might be running.`);
+        } else {
+            console.error("[WebSocket] Server Error:", error);
+        }
 
-    if (wss === server) {
-        wss = null;
-    }
-});
+        if (wss === server) {
+            wss = null;
+        }
+    });
 
-return server;
+    return server;
 }
 
 if (process.env.NODE_ENV === 'production') {
