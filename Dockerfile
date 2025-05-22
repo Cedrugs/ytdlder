@@ -12,6 +12,7 @@ FROM node:23-alpine AS runner
 WORKDIR /app
 
 ENV SITE_URL=http://localhost:3000
+ENV STORAGE=local
 
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next ./.next

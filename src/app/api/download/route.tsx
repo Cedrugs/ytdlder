@@ -104,8 +104,6 @@ export async function GET(request: NextRequest) {
             });
         }
 
-        console.log(videoFormat);
-
         // Download the audio
         if ((videoFormat.hasAudio === false && audioFormat) || videoFormat.mimeType?.includes("audio")) {
             console.log(`[${downloadId}] [${videoId}] Starting server-side audio download`);
