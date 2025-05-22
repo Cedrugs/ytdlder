@@ -27,8 +27,6 @@ export async function POST(request: NextRequest) {
 			(format) => format.hasAudio && !format.hasVideo
 		)
 
-		console.log(audioFormats[0])
-
 		formats.sort((a, b) => {
 			const aHasLabel = !!a.qualityLabel;
 			const bHasLabel = !!b.qualityLabel;
