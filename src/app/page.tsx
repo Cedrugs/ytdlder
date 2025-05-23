@@ -144,17 +144,13 @@ export default function Landing() {
 
     return (
         <>
-            <section id="Download" className="flex items-center justify-center content-center h-[100vh] gap-8">
+            <section id="Download" className="flex flex-col items-center justify-center content-center h-[100vh] gap-8 p-2 md:flex-row sm:p-10 md:p-20">
                 <motion.div
-                    animate={{
-                        x: videoData ? -50 : 0,
-                    }}
-                    transition={{ type: "spring", stiffness: 100, damping: 20 }}
-                    className="flex flex-col justify-center items-center bg-black p-20 rounded-2xl space-y-6 border-red-500 border-2 gap-2"
+                    className="flex flex-col flex-grow justify-center items-center bg-black px-10 py-15 max-w-[420px] max-h-[320px] rounded-2xl space-y-6 border-red-500 border-2 gap-2 sm:max-h-[420px] sm:px-20 md:py-20 "
                 >
                     <div className="flex flex-col gap-4 justify-center items-center">
-                        <h1 className="text-7xl font-bold text-center text-red-500">ytdlder</h1>
-                        <p className="text-red-500">Made with &lt;3 by cedric</p>
+                        <h1 className="text-4xl font-bold text-center text-red-500 sm:text-5xl lg:text-6xl">ytdlder</h1>
+                        <p className="text-red-500 text-xs text-center sm:text-sm lg:text-base">Made with &lt;3 by cedric</p>
                     </div>
                     <form className="flex flex-col w-full gap-6" onSubmit={handleSubmit}>
                         <input
@@ -164,16 +160,16 @@ export default function Landing() {
                             value={formData.url}
                             onChange={handleChange}
                             className="w-full px-4 py-3 bg-zinc-800 text-white rounded-xl focus:outline-none 
-                                        focus:ring-2 focus:ring-red-500 placeholder-white"
+                                        focus:ring-2 focus:ring-red-500 placeholder-white text-xs sm:text-sm lg:text-base"
                         />
-                        <p className={error ? "text-red-500" : "hidden"}>{error}</p>
                         <button
                             className="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-3 rounded-xl 
-                                        transition duration-300 disabled:cursor-no-drop disabled:bg-zinc-800"
+                                        transition duration-300 disabled:cursor-no-drop disabled:bg-zinc-800 text-xs sm:text-sm lg:text-base"
                             disabled={isLoading}
                         >
                             Search
                         </button>
+                        <p className={error ? "text-xs text-center text-red-500" : "hidden"}>{error}</p>
                     </form>
                 </motion.div>
 
@@ -185,17 +181,19 @@ export default function Landing() {
                             animate={{ x: 0, opacity: 1 }}
                             exit={{ x: -100, opacity: 0 }}
                             transition={{ type: "spring", stiffness: 80, damping: 15 }}
-                            className="flex flex-col w-96 gap-4"
+                            className="flex flex-col gap-4"
                         >
-                            <Image 
-                                src={videoData?.videoDetails?.thumbnail ?? ""}
-                                alt={videoData?.videoDetails?.title} 
-                                className="w-96 rounded-xl border-2 border-red-500" 
-                                width={384}
-                                height={216}
-                                unoptimized
-                            />
-                            <p className="text-red-500 text-wrap">{videoData?.videoDetails?.title}</p>
+                            <div className="relative w-full h-auto aspect-video md:h-[200px] lg:h-[240px]">
+                                <Image 
+                                    src={videoData?.videoDetails?.thumbnail ?? ""}
+                                    alt={videoData?.videoDetails?.title} 
+                                    layout="fill"
+                                    objectFit="cover"
+                                    className="rounded-xl border-2 border-red-500" 
+                                    unoptimized
+                                />
+                            </div>
+                            <p className="text-red-500 text-center text-xs md:text-left md:text-sm lg:text-base">{videoData?.videoDetails?.title}</p>
                             <div className="flex flex-row w-full gap-4 items-center justify-center">
                                 <div className="flex-grow">
                                     <Dropdown
@@ -214,8 +212,8 @@ export default function Landing() {
                                 </div>
                                 <button
                                     className={
-                                        `text-white rounded-2xl w-16 h-14 flex justify-center items-center bg-red-500 hover:bg-red-600 
-                                        disabled:bg-zinc-800 transition duration-300`
+                                        `text-white rounded-2xl px-4 py-[14px] flex justify-center items-center bg-red-500 hover:bg-red-600 
+                                        disabled:bg-zinc-800 transition duration-300 lg:p-5`
                                     }
                                     disabled={isDownloading}
                                     onClick={handleDownload}
@@ -223,7 +221,7 @@ export default function Landing() {
                                     {isDownloading ? (
                                         <div className="w-6 h-6 border-4 border-white border-t-transparent rounded-full animate-spin" />
                                     ) : (
-                                        <span className="material-symbols-outlined">download</span>
+                                        <span className="material-symbols-outlined ">download</span>
                                     )}
                                 </button>
                             </div>
@@ -234,9 +232,9 @@ export default function Landing() {
                                 animate={{ y: 0, opacity: 1 }}
                                 exit={{ y: -100, opacity: 0 }}
                                 transition={{ type: "spring", stiffness: 80, damping: 15 }}
-                                className="flex flex-col w-96 gap-4"
+                                className="flex flex-col gap-4"
                                 >
-                                    <p className="text-white bg-zinc-800 p-4 rounded-xl">[Log]: {downloadProgress}</p>
+                                    <p className="text-white bg-zinc-800 p-4 rounded-xl text-xs">[Log]: {downloadProgress}</p>
                                 </motion.div>
                             )}
                         </motion.div>
