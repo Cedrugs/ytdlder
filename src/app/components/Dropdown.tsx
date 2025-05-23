@@ -20,7 +20,7 @@ export default function Dropdown({ options, defaultValue, onChange }: DropdownPr
             <div className="flex w-full">
                 <button
                     onClick={toggleDropdown}
-                    className="bg-red-500 text-white px-2 py-4 rounded-2xl flex-grow flex justify-between items-center hover:bg-red-600 transition duration-300 text-xs sm:text-sm sm:px-4 lg:text-base lg:px-4 lg:py-5"
+                    className="bg-red-500 text-white px-2 py-4 rounded-2xl flex-grow flex justify-between items-center hover:bg-red-600 transition duration-300 text-xs sm:text-sm sm:px-5 lg:text-base lg:px-6 lg:py-4"
                 >
                     {selected}
                     <ChevronDown className="ml-2 h-5 w-5 text-white text-xs" />
