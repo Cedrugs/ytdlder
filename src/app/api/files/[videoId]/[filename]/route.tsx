@@ -31,6 +31,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ vide
             "Content-Type": contentType,
             "Content-Length": fileStat.size.toString(),
             "Content-Disposition": `inline; filename="${filename}"`,
+            "Cache-Control": "public, max-age=31536000", // Cache for 1 year
         },
     });
 }

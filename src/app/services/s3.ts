@@ -13,20 +13,31 @@ const s3 = new S3Client({
 
 export async function uploadFile(fileName: string, filePath: string) {
     const fileStream = fs.createReadStream(filePath);
+    const maxRetries = 3;
+    let retryCount = 0;
 
-    try {
-        console.log("[ytdlder] Uploading file to S3");
-        const command = new PutObjectCommand({
-            Bucket: "ytdlder",
-            Key: fileName,
-            Body: fileStream
-        });
+    while (retryCount < maxRetries) {
+        try {
+            console.log("[ytdlder] Uploading file to S3");
+            const command = new PutObjectCommand({
+                Bucket: "ytdlder",
+                Key: fileName,
+                Body: fileStream
+            });
 
-        const response = await s3.send(command);
-        console.log("[ytdlder] File uploaded successfully to S3: ");
+            const response = await s3.send(command);
+            console.log("[ytdlder] File uploaded successfully to S3: ");
 
-        return response;
-    } catch(err) {
-        console.error("[ytdlder] File uploaed failed: ", err);
+            return response;
+        } catch(err) {
+            retryCount++;
+            console.error(`[ytdlder] File upload failed: ${err}. Retry attempt ${retryCount} of ${maxRetries}`);
+            if (retryCount === maxRetries) {
+                console.error("[ytdlder] File upload failed after maximum retries: ", err);
+                throw err;
+            }
+            // Wait for a short period before retrying
+            await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+        }
     }
 }

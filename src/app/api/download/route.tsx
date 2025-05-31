@@ -178,8 +178,18 @@ export async function GET(request: NextRequest) {
     } catch (err: unknown) {
         const error = err as Error;
 
-        console.error(`[${downloadId}] [${videoId}] Download error:`, error);
-        return new Response(JSON.stringify({ error: "An unknown error occurred during download." }), { status: 500 });
+        if (error.message.includes("Video unavailable")) {
+            return new Response(JSON.stringify({ error: "This video is unavailable" }), { status: 404 });
+        } else if (error.message.includes("This is a private video")) {
+            return new Response(JSON.stringify({ error: "This video is private" }), { status: 403 });
+        } else if (error.message.includes("Sign in to confirm your age")) {
+            return new Response(JSON.stringify({ error: "This video is age restricted" }), { status: 403 });
+        } else if (error.message.includes("No audio available")) {
+            return new Response(JSON.stringify({ error: "No audio available for the video" }), { status: 404 });
+        } else {
+            console.error(`[${downloadId}] [${videoId}] Download error:`, error);
+            return new Response(JSON.stringify({ error: "An unknown error occurred during download." }), { status: 500 });
+        }
     } finally {
         // Clean up temp files
         if (fs.existsSync(tempVideoPath) && tempVideoPath !== mergedPath) fs.unlinkSync(tempVideoPath);

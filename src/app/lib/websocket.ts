@@ -11,42 +11,42 @@ const clients: Record<string, WebSocket> = {};
 const PORT = 3001;
 
 function initializeWebSocketServer(): WebSocketServer {
-console.log("Attempting to initialize WebSocket server...");
-const server = new WebSocketServer({ port: PORT });
+    console.log("Attempting to initialize WebSocket server...");
+    const server = new WebSocketServer({ port: PORT });
 
-server.on("listening", () => {
-    console.log(`[WebSocket] WebSocket server started and listening on port ${PORT}`);
-});
+    server.on("listening", () => {
+        console.log(`[WebSocket] WebSocket server started and listening on port ${PORT}`);
+    });
 
-server.on("connection", (ws: WebSocket, req: IncomingMessage) => {
-    const requestUrl = req.url || '';
-    const queryParams = new URLSearchParams(requestUrl.split('?')[1]);
-    const downloadId = queryParams.get('downloadId');
+    server.on("connection", (ws: WebSocket, req: IncomingMessage) => {
+        const requestUrl = req.url || '';
+        const queryParams = new URLSearchParams(requestUrl.split('?')[1]);
+        const downloadId = queryParams.get('downloadId');
 
-    if (downloadId) {
-        clients[downloadId] = ws;
-        console.log(`[WebSocket] Client connected with downloadId: ${downloadId}`);
+        if (downloadId) {
+            clients[downloadId] = ws;
+            console.log(`[WebSocket] Client connected with downloadId: ${downloadId}`);
 
-        ws.on("message", (message) => {
-            console.log(`[WebSocket] Received message from ${downloadId}: ${message}`);
-        });
+            ws.on("message", (message) => {
+                console.log(`[WebSocket] Received message from ${downloadId}: ${message}`);
+            });
 
-        ws.on("close", () => {
-            delete clients[downloadId];
-            console.log(`[WebSocket] Client disconnected with downloadId: ${downloadId}`);
-        });
+            ws.on("close", () => {
+                delete clients[downloadId];
+                console.log(`[WebSocket] Client disconnected with downloadId: ${downloadId}`);
+            });
 
-        ws.on("error", (error) => {
-            console.error(`[WebSocket] Error for client ${downloadId}:`, error);
-            delete clients[downloadId];
-        });
-    } else {
-        console.log("[WebSocket] Client connected without a downloadId. Closing connection.");
-        ws.close();
-    }
-});
+            ws.on("error", (error) => {
+                console.error(`[WebSocket] Error for client ${downloadId}:`, error);
+                delete clients[downloadId];
+            });
+        } else {
+            console.log("[WebSocket] Client connected without a downloadId. Closing connection.");
+            ws.close();
+        }
+    });
 
-server.on("error", (error: NodeJS.ErrnoException) => {
+    server.on("error", (error: NodeJS.ErrnoException) => {
         if (error.code === 'EADDRINUSE') {
             console.error(`[WebSocket] Error: Port ${PORT} is already in use. Another server instance might be running.`);
         } else {
@@ -61,18 +61,9 @@ server.on("error", (error: NodeJS.ErrnoException) => {
     return server;
 }
 
-if (process.env.NODE_ENV === 'production') {
-    if (!wss) {
-        wss = initializeWebSocketServer();
-    }
-} else {
-    if (!global.__globalWssInstance) {
-        console.log("[WebSocket] Creating new server instance for development.");
-        global.__globalWssInstance = initializeWebSocketServer();
-    } else {
-        console.log("[WebSocket] Re-using existing server instance from global for development.");
-    }
-    wss = global.__globalWssInstance;
+// Initialize WebSocket server for both production and development
+if (!wss) {
+    wss = initializeWebSocketServer();
 }
 
 if (!wss) {
